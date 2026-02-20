@@ -78,6 +78,9 @@ auth.onAuthStateChanged(user => {
     feather.replace();
 });
 
+// Process redirect result (needed when returning from signInWithRedirect)
+auth.getRedirectResult().catch(() => {});
+
 // Setup Auth Listeners Immediately
 setupAuthEventListeners();
 
@@ -91,12 +94,24 @@ function setupAuthEventListeners() {
     // Google Login Logic
     googleLoginBtn.addEventListener('click', async () => {
         const provider = new firebase.auth.GoogleAuthProvider();
+        // In standalone PWA mode (added to home screen), redirect auth opens in Safari
+        // and never returns to the PWA — use popup instead.
+        const isStandalone = window.navigator.standalone === true ||
+            window.matchMedia('(display-mode: standalone)').matches;
         try {
-            // Usamos Redirect en lugar de Popup para mayor compatibilidad
-            await auth.signInWithRedirect(provider);
+            if (isStandalone) {
+                await auth.signInWithPopup(provider);
+            } else {
+                await auth.signInWithRedirect(provider);
+            }
         } catch (err) {
-            console.error(err);
-            alert("Error al acceder con Google. Revisa tu conexión.");
+            if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+                // Popup was blocked — fall back to redirect
+                try { await auth.signInWithRedirect(provider); } catch (e) { console.error(e); }
+            } else if (err.code !== 'auth/popup-closed-by-user') {
+                console.error(err);
+                alert("Error al acceder con Google. Revisa tu conexión.");
+            }
         }
     });
 
