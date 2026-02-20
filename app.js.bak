@@ -1,11 +1,11 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyDQ_2fFv3cR0pBUAG8-YKJDI_Cwld6tsgQ",
-    authDomain: "control-de-gastos-personal.firebaseapp.com",
-    projectId: "control-de-gastos-personal",
-    storageBucket: "control-de-gastos-personal.firebasestorage.app",
-    messagingSenderId: "261441660020",
-    appId: "1:261441660020:web:bb15a95e19a5e913cfdd21",
-    measurementId: "G-CCNWQK0CFK"
+    projectId: "control-gastos-paz-financiera",
+    appId: "1:774617150915:web:b76fef8922d95fc1d9b976",
+    storageBucket: "control-gastos-paz-financiera.firebasestorage.app",
+    apiKey: "AIzaSyDxjCsaTYu2A7fkgt414kxNV_LL_TDw9oA",
+    authDomain: "control-gastos-paz-financiera.firebaseapp.com",
+    messagingSenderId: "774617150915",
+    projectNumber: "774617150915"
 };
 
 // Initialize Firebase
