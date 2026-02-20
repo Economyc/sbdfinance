@@ -1,4 +1,4 @@
-const CACHE_NAME = 'balance-v2';
+const CACHE_NAME = 'balance-v3';
 const APP_SHELL = [
   './index.html',
   './styles.css',

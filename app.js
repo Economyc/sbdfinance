@@ -27,6 +27,7 @@ let activeFilters = {
 };
 
 let currentTheme = localStorage.getItem('theme') || 'light';
+let appListenersSetup = false;
 if (currentTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 
 // DOM Elements
@@ -66,6 +67,21 @@ const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 const themeIcon = document.getElementById('themeIcon');
 
+// Theme toggle — runs once, works on both login screen and main app
+if (currentTheme === 'dark') document.addEventListener('DOMContentLoaded', () => {
+    if (themeIcon) themeIcon.setAttribute('data-feather', 'sun');
+}, { once: true });
+themeToggleBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (dropdownMenu) dropdownMenu.classList.remove('active');
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    localStorage.setItem('theme', currentTheme);
+    themeIcon.setAttribute('data-feather', currentTheme === 'light' ? 'moon' : 'sun');
+    feather.replace();
+});
+
 // Auth State Monitor
 auth.onAuthStateChanged(user => {
     if (user) {
@@ -86,8 +102,11 @@ auth.onAuthStateChanged(user => {
 setupAuthEventListeners();
 
 function initApp() {
-    setupAppEventListeners();
-    setupIconPicker();
+    if (!appListenersSetup) {
+        setupAppEventListeners();
+        setupIconPicker();
+        appListenersSetup = true;
+    }
     startSync();
 }
 
@@ -135,21 +154,11 @@ function setupAuthEventListeners() {
         }
     });
 
-    // Theme toggle (must work anywhere)
-    if (currentTheme === 'dark') themeIcon.setAttribute('data-feather', 'sun');
-
-    themeToggleBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', currentTheme);
-        localStorage.setItem('theme', currentTheme);
-        themeIcon.setAttribute('data-feather', currentTheme === 'light' ? 'moon' : 'sun');
-        feather.replace();
-    });
 }
 
 function startSync() {
     if (!currentUser) return;
+    stopSync(); // clean up any existing subscriptions before creating new ones
     const userRef = db.collection('users').doc(currentUser.uid);
 
     unsubscribeCategories = userRef.collection('categories')
@@ -273,11 +282,6 @@ function setupAppEventListeners() {
         dropdownMenu.classList.remove('active');
         renderCategories();
         openModal(categoriesModal);
-    });
-    themeToggleBtn.addEventListener('click', (e) => {
-        dropdownMenu.classList.remove('active');
-        // El resto del código del theme ya estaba definido o se invoca desde aquí si se movió abajo
-        // Pero el listener original está en setupAuthEventListeners para que funcione en login
     });
     closeBtns.forEach(btn => btn.addEventListener('click', () => modals.forEach(m => closeModal(m))));
     expenseTypeSelect.addEventListener('change', (e) => {
