@@ -107,6 +107,15 @@ body {
     color: var(--danger);
 }
 
+.pin-input {
+    width: 50px !important;
+    height: 60px !important;
+    text-align: center;
+    font-size: 1.5rem !important;
+    font-weight: 600;
+    border-radius: 12px !important;
+}
+
 .app-container {
     max-width: 480px;
     margin: 0 auto;
