@@ -32,7 +32,11 @@ if (currentTheme === 'dark') document.documentElement.setAttribute('data-theme',
 // DOM Elements
 const authContainer = document.getElementById('authContainer');
 const mainAppContainer = document.getElementById('mainAppContainer');
-const googleLoginBtn = document.getElementById('googleLoginBtn');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const authError = document.getElementById('authError');
 const logoutBtn = document.getElementById('logoutBtn');
 
 const periodBtns = document.querySelectorAll('.period-btn');
@@ -78,9 +82,6 @@ auth.onAuthStateChanged(user => {
     feather.replace();
 });
 
-// Process redirect result after returning from Google Sign-In
-auth.getRedirectResult().catch(() => {});
-
 // Setup Auth Listeners Immediately
 setupAuthEventListeners();
 
@@ -90,15 +91,47 @@ function initApp() {
     startSync();
 }
 
+function showAuthError(msg) {
+    authError.textContent = msg;
+    authError.style.display = 'block';
+}
+
+function clearAuthError() {
+    authError.style.display = 'none';
+    authError.textContent = '';
+}
+
 function setupAuthEventListeners() {
-    // Google Login Logic
-    googleLoginBtn.addEventListener('click', async () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
+    loginBtn.addEventListener('click', async () => {
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+        clearAuthError();
+        if (!email || !password) { showAuthError('Ingresa tu correo y contraseña.'); return; }
         try {
-            await auth.signInWithRedirect(provider);
+            await auth.signInWithEmailAndPassword(email, password);
         } catch (err) {
-            console.error(err);
-            alert("Error al acceder con Google. Revisa tu conexión.");
+            if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                showAuthError('Correo o contraseña incorrectos.');
+            } else {
+                showAuthError('Error al iniciar sesión. Intenta de nuevo.');
+            }
+        }
+    });
+
+    registerBtn.addEventListener('click', async () => {
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+        clearAuthError();
+        if (!email || !password) { showAuthError('Ingresa tu correo y contraseña.'); return; }
+        if (password.length < 6) { showAuthError('La contraseña debe tener al menos 6 caracteres.'); return; }
+        try {
+            await auth.createUserWithEmailAndPassword(email, password);
+        } catch (err) {
+            if (err.code === 'auth/email-already-in-use') {
+                showAuthError('Ese correo ya tiene una cuenta. Inicia sesión.');
+            } else {
+                showAuthError('Error al crear la cuenta. Intenta de nuevo.');
+            }
         }
     });
 
