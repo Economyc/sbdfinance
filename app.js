@@ -59,6 +59,8 @@ const categoriesListEl = document.getElementById('categoriesList');
 const filterModal = document.getElementById('filterModal');
 const applyFiltersBtn = document.getElementById('applyFiltersBtn');
 const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+const themeIcon = document.getElementById('themeIcon');
 
 // Auth State Monitor
 auth.onAuthStateChanged(user => {
@@ -99,8 +101,6 @@ function setupAuthEventListeners() {
     });
 
     // Theme toggle (must work anywhere)
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const themeIcon = document.getElementById('themeIcon');
     if (currentTheme === 'dark') themeIcon.setAttribute('data-feather', 'sun');
 
     themeToggleBtn.addEventListener('click', (e) => {
@@ -162,7 +162,29 @@ async function seedCategories() {
 }
 
 function setupAppEventListeners() {
-    logoutBtn.addEventListener('click', () => auth.signOut());
+    // Menu Toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    const appHeader = document.getElementById('appHeader');
+
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdownMenu.classList.toggle('active');
+    });
+
+    // Sticky Header Scroll Effect
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 20) {
+            appHeader.classList.add('scrolled');
+        } else {
+            appHeader.classList.remove('scrolled');
+        }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        dropdownMenu.classList.remove('active');
+        auth.signOut();
+    });
 
     // Periods
     periodBtns.forEach(btn => {
@@ -175,7 +197,10 @@ function setupAppEventListeners() {
     });
 
     // Filters
-    filterBtn.addEventListener('click', () => openModal(filterModal));
+    filterBtn.addEventListener('click', () => {
+        dropdownMenu.classList.remove('active');
+        openModal(filterModal);
+    });
     applyFiltersBtn.addEventListener('click', () => {
         activeFilters.search = document.getElementById('filterSearch').value.toLowerCase();
         activeFilters.category = document.getElementById('filterCategory').value;
@@ -204,8 +229,14 @@ function setupAppEventListeners() {
         openModal(expenseModal);
     });
     openCategoriesBtn.addEventListener('click', () => {
+        dropdownMenu.classList.remove('active');
         renderCategories();
         openModal(categoriesModal);
+    });
+    themeToggleBtn.addEventListener('click', (e) => {
+        dropdownMenu.classList.remove('active');
+        // El resto del código del theme ya estaba definido o se invoca desde aquí si se movió abajo
+        // Pero el listener original está en setupAuthEventListeners para que funcione en login
     });
     closeBtns.forEach(btn => btn.addEventListener('click', () => modals.forEach(m => closeModal(m))));
     expenseTypeSelect.addEventListener('change', (e) => {
@@ -228,6 +259,7 @@ function setupAppEventListeners() {
         modals.forEach(modal => { if (e.target === modal) closeModal(modal); });
         if (!e.target.closest('.custom-select')) document.getElementById('expenseCategoryOptions').classList.add('select-hide');
         if (!e.target.closest('#categoryForm')) document.getElementById('iconPicker').classList.add('select-hide');
+        if (!e.target.closest('.menu-container')) dropdownMenu.classList.remove('active');
     });
 }
 

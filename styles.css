@@ -1,5 +1,6 @@
 :root {
     --bg-color: #F9F9F7;
+    --bg-rgb: 249, 249, 247;
     --card-bg: #FFFFFF;
     --text-main: #1C1C1A;
     --text-muted: #828280;
@@ -15,6 +16,7 @@
 
 [data-theme="dark"] {
     --bg-color: #121212;
+    --bg-rgb: 18, 18, 18;
     --card-bg: #1E1E1E;
     --text-main: #F5F5F5;
     --text-muted: #A0A0A0;
@@ -126,19 +128,103 @@ body {
 }
 
 header {
+    position: sticky;
+    top: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-color);
+    z-index: 90;
+    margin: -2rem -1.5rem 2rem -1.5rem;
+    border-bottom: 1px solid transparent;
+    transition: var(--transition);
+}
+
+header.scrolled {
+    background: rgba(var(--bg-rgb, 249, 249, 247), 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .logo {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: 500;
-    font-size: 1.25rem;
+    font-weight: 600;
+    font-size: 1.15rem;
     letter-spacing: -0.02em;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/* Menu Dropdown */
+.menu-container {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    width: 200px;
+    padding: 0.5rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+    display: none;
+    flex-direction: column;
+    z-index: 100;
+    margin-top: 0.5rem;
+    animation: slideDown 0.2s ease-out;
+}
+
+.dropdown-menu.active {
+    display: flex;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.menu-item:hover {
+    background: var(--bg-color);
+}
+
+.menu-item i {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .icon-btn {
@@ -341,7 +427,7 @@ header {
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--transition);
-    z-index: 100;
+    z-index: 200;
 }
 
 .modal-overlay.active {

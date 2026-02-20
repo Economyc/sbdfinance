@@ -57,21 +57,40 @@
 
     <!-- Main App Container -->
     <div class="app-container" id="mainAppContainer" style="display: none;">
-        <header>
+        <header id="appHeader">
             <div class="logo">
                 <i data-feather="feather"></i>
                 <span>Balance</span>
             </div>
-            <div class="header-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                <button class="icon-btn" id="themeToggleBtn" title="Alternar tema">
-                    <i data-feather="moon" id="themeIcon"></i>
+            <div class="header-actions">
+                <button class="icon-btn" id="addExpenseBtn" title="Ingresar Gasto"
+                    style="background: var(--accent); color: var(--card-bg); width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                    <i data-feather="plus" style="width: 20px; height: 20px;"></i>
                 </button>
-                <button class="icon-btn" id="openCategoriesBtn" title="Gestionar Categorías">
-                    <i data-feather="grid"></i>
-                </button>
-                <button class="icon-btn logout-btn" id="logoutBtn" title="Cerrar Sesión">
-                    <i data-feather="log-out"></i>
-                </button>
+                <div class="menu-container">
+                    <button class="icon-btn" id="menuBtn" title="Menú">
+                        <i data-feather="more-vertical"></i>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <button class="menu-item" id="filterBtn">
+                            <i data-feather="filter"></i>
+                            <span>Filtrar</span>
+                        </button>
+                        <button class="menu-item" id="openCategoriesBtn">
+                            <i data-feather="grid"></i>
+                            <span>Categorías</span>
+                        </button>
+                        <button class="menu-item" id="themeToggleBtn">
+                            <i data-feather="moon" id="themeIcon"></i>
+                            <span>Apariencia</span>
+                        </button>
+                        <div style="height: 1px; background: var(--border-color); margin: 0.25rem 0.5rem;"></div>
+                        <button class="menu-item logout-btn" id="logoutBtn" style="color: var(--danger);">
+                            <i data-feather="log-out"></i>
+                            <span>Cerrar Sesión</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -88,18 +107,11 @@
                 <p class="summary-date" id="currentDateLabel">Oct 1 - Oct 15</p>
             </section>
 
-            <section class="actions">
-                <button class="primary-btn" id="addExpenseBtn">
-                    <i data-feather="plus"></i> Ingresar Gasto
-                </button>
-            </section>
+
 
             <section class="expenses-list">
                 <div class="list-header">
                     <h2>Movimientos</h2>
-                    <button class="icon-btn" id="filterBtn" title="Histórico y Filtros">
-                        <i data-feather="filter"></i>
-                    </button>
                 </div>
                 <div id="expensesContainer" class="expenses-container">
                     <!-- Los gastos se inyectan acá -->
