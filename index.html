@@ -5,6 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Paz Financiera - Control de Gastos</title>
+
+    <!-- PWA: Web App Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- PWA: iOS Safari home screen support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Balance">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+
+    <!-- PWA: Theme color for browser chrome -->
+    <meta name="theme-color" content="#1C1C1A">
+    <meta name="mobile-web-app-capable" content="yes">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
@@ -17,6 +31,33 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+
+        // Block pinch-to-zoom on iOS (user-scalable=no is ignored since iOS 10)
+        document.addEventListener('touchmove', function (e) {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        // Block double-tap zoom
+        let _lastTap = 0;
+        document.addEventListener('touchend', function (e) {
+            const now = Date.now();
+            if (now - _lastTap < 300) e.preventDefault();
+            _lastTap = now;
+        }, { passive: false });
+
+        // Block gesture zoom (Safari-specific)
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+    </script>
 </head>
 
 <body class="auth-required">
