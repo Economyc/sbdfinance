@@ -637,7 +637,6 @@ header.scrolled {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    overflow: hidden;
 }
 
 label {
@@ -651,6 +650,7 @@ select {
     font-family: inherit;
     width: 100%;
     min-width: 0;
+    max-width: 100%;
     padding: 0.8rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -659,6 +659,11 @@ select {
     font-size: 1rem;
     transition: var(--transition);
     outline: none;
+}
+
+input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 input:focus,
