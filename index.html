@@ -12,21 +12,55 @@
     <link rel="stylesheet" href="styles.css">
     <!-- Iconos de Feather, simples y de línea -->
     <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- Firebase SDK (v9+ compat mode for easier integration) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 
-<body>
-    <div class="app-container">
+<body class="auth-required">
+    <!-- Login Screen -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-card">
+            <div class="logo large">
+                <i data-feather="feather"></i>
+                <span>Balance</span>
+            </div>
+            <h2>Bienvenido</h2>
+            <p>Ingresa para empezar a controlar tus gastos</p>
+
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="tu@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="submit-btn primary-btn" id="loginSubmitBtn">Ingresar</button>
+            </form>
+            <p class="auth-switch">¿No tienes cuenta? <a href="#" id="showSignup">Regístrate</a></p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="mainAppContainer" style="display: none;">
         <header>
             <div class="logo">
                 <i data-feather="feather"></i>
                 <span>Balance</span>
             </div>
-            <div class="header-actions" style="display: flex; gap: 0.5rem;">
+            <div class="header-actions" style="display: flex; gap: 0.5rem; align-items: center;">
                 <button class="icon-btn" id="themeToggleBtn" title="Alternar tema">
                     <i data-feather="moon" id="themeIcon"></i>
                 </button>
                 <button class="icon-btn" id="openCategoriesBtn" title="Gestionar Categorías">
                     <i data-feather="grid"></i>
+                </button>
+                <button class="icon-btn logout-btn" id="logoutBtn" title="Cerrar Sesión">
+                    <i data-feather="log-out"></i>
                 </button>
             </div>
         </header>

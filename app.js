@@ -1,14 +1,36 @@
-let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
-let categories = JSON.parse(localStorage.getItem('categories')) || [
-    { id: '1', name: 'Alimentación', icon: 'shopping-bag' },
-    { id: '2', name: 'Transporte', icon: 'truck' },
-    { id: '3', name: 'Servicios', icon: 'zap' },
-    { id: '4', name: 'Ocio', icon: 'film' }
-];
-let currentPeriod = 'biweekly';
+const firebaseConfig = {
+    projectId: "bukzbrain-v2-glow-bright",
+    appId: "1:968115218436:web:3e07405d722500f2d96d51",
+    storageBucket: "bukzbrain-v2-glow-bright.firebasestorage.app",
+    apiKey: "AIzaSyBZQSdTIPRZLljaucFFLiG2WiWbSfpDnYI",
+    authDomain: "bukzbrain-v2-glow-bright.firebaseapp.com",
+    messagingSenderId: "968115218436",
+    projectNumber: "968115218436"
+};
 
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let expenses = [];
+let categories = [];
+let unsubscribeExpenses = null;
+let unsubscribeCategories = null;
+
+let currentPeriod = 'biweekly';
 let currentTheme = localStorage.getItem('theme') || 'light';
 if (currentTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+// DOM Elements
+const authContainer = document.getElementById('authContainer');
+const mainAppContainer = document.getElementById('mainAppContainer');
+const loginForm = document.getElementById('loginForm');
+const loginEmail = document.getElementById('loginEmail');
+const loginPassword = document.getElementById('loginPassword');
+const showSignup = document.getElementById('showSignup');
+const logoutBtn = document.getElementById('logoutBtn');
 
 const periodBtns = document.querySelectorAll('.period-btn');
 const totalAmountEl = document.getElementById('totalAmount');
@@ -25,60 +47,88 @@ const expenseModal = document.getElementById('expenseModal');
 const expenseForm = document.getElementById('expenseForm');
 const expenseTypeSelect = document.getElementById('expenseType');
 const recurrencePeriodGroup = document.getElementById('recurrencePeriodGroup');
-const expenseCategorySelect = document.getElementById('expenseCategory');
 
 const categoriesModal = document.getElementById('categoriesModal');
 const categoryForm = document.getElementById('categoryForm');
 const categoriesListEl = document.getElementById('categoriesList');
 
-feather.replace();
+let isSignup = false;
 
-function init() {
+// Auth State Monitor
+auth.onAuthStateChanged(user => {
+    if (user) {
+        currentUser = user;
+        authContainer.style.display = 'none';
+        mainAppContainer.style.display = 'flex';
+        initApp();
+    } else {
+        currentUser = null;
+        authContainer.style.display = 'flex';
+        mainAppContainer.style.display = 'none';
+        stopSync();
+    }
+    feather.replace();
+});
+
+function initApp() {
     setupEventListeners();
     setupIconPicker();
-    updateUI();
+    startSync();
 }
 
-function setupIconPicker() {
-    const availableIcons = [
-        'tag', 'shopping-bag', 'shopping-cart', 'truck', 'home',
-        'coffee', 'film', 'credit-card', 'zap', 'briefcase',
-        'heart', 'gift', 'activity', 'bookmark', 'box'
+function startSync() {
+    // Sync Categories
+    unsubscribeCategories = db.collection('users').doc(currentUser.uid).collection('categories')
+        .onSnapshot(snapshot => {
+            categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // If new user with no categories, seed them
+            if (categories.length === 0) {
+                seedCategories();
+            } else {
+                updateUI();
+                renderCategories();
+            }
+        });
+
+    // Sync Expenses
+    unsubscribeExpenses = db.collection('users').doc(currentUser.uid).collection('expenses')
+        .onSnapshot(snapshot => {
+            expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateUI();
+        });
+}
+
+function stopSync() {
+    if (unsubscribeCategories) unsubscribeCategories();
+    if (unsubscribeExpenses) unsubscribeExpenses();
+    unsubscribeCategories = null;
+    unsubscribeExpenses = null;
+    categories = [];
+    expenses = [];
+}
+
+async function seedCategories() {
+    const defaultCategories = [
+        { name: 'Alimentación', icon: 'shopping-bag' },
+        { name: 'Transporte', icon: 'truck' },
+        { name: 'Servicios', icon: 'zap' },
+        { name: 'Ocio', icon: 'film' }
     ];
 
-    const picker = document.getElementById('iconPicker');
-    picker.innerHTML = availableIcons.map(icon => `
-        <div data-icon="${icon}">
-            <i data-feather="${icon}"></i>
-        </div>
-    `).join('');
+    const batch = db.batch();
+    const userCatsRef = db.collection('users').doc(currentUser.uid).collection('categories');
 
-    const hiddenInput = document.getElementById('newCategoryIcon');
-    const currentIcon = document.getElementById('currentCategoryIcon');
-    const iconBtn = document.getElementById('categoryIconBtn');
-
-    picker.querySelectorAll('div').forEach(div => {
-        div.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const icon = div.dataset.icon;
-            hiddenInput.value = icon;
-            currentIcon.setAttribute('data-feather', icon);
-            feather.replace();
-            picker.classList.add('select-hide');
-            picker.querySelectorAll('div').forEach(d => d.classList.remove('active'));
-            div.classList.add('active');
-        });
+    defaultCategories.forEach(cat => {
+        const newRef = userCatsRef.doc();
+        batch.set(newRef, cat);
     });
 
-    iconBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        picker.classList.toggle('select-hide');
-        const expenseOpts = document.getElementById('expenseCategoryOptions');
-        if (expenseOpts) expenseOpts.classList.add('select-hide');
-    });
+    await batch.commit();
 }
 
 function setupEventListeners() {
+    // Theme
     const themeToggleBtn = document.getElementById('themeToggleBtn');
     const themeIcon = document.getElementById('themeIcon');
     if (currentTheme === 'dark') themeIcon.setAttribute('data-feather', 'sun');
@@ -91,6 +141,35 @@ function setupEventListeners() {
         feather.replace();
     });
 
+    // Auth
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = loginEmail.value;
+        const password = loginPassword.value;
+
+        try {
+            if (isSignup) {
+                await auth.createUserWithEmailAndPassword(email, password);
+            } else {
+                await auth.signInWithEmailAndPassword(email, password);
+            }
+        } catch (err) {
+            alert(err.message);
+        }
+    });
+
+    showSignup.addEventListener('click', (e) => {
+        e.preventDefault();
+        isSignup = !isSignup;
+        document.querySelector('.auth-card h2').innerText = isSignup ? 'Crear Cuenta' : 'Bienvenido';
+        document.getElementById('loginSubmitBtn').innerText = isSignup ? 'Registrarse' : 'Ingresar';
+        showSignup.innerText = isSignup ? 'Ingresa aquí' : 'Regístrate';
+        document.querySelector('.auth-switch').firstChild.textContent = isSignup ? '¿Ya tienes cuenta? ' : '¿No tienes cuenta? ';
+    });
+
+    logoutBtn.addEventListener('click', () => auth.signOut());
+
+    // Periods
     periodBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             periodBtns.forEach(b => b.classList.remove('active'));
@@ -100,6 +179,7 @@ function setupEventListeners() {
         });
     });
 
+    // Modals
     addExpenseBtn.addEventListener('click', () => {
         document.getElementById('expenseModalTitle').innerText = 'Nuevo Gasto';
         expenseForm.reset();
@@ -123,6 +203,7 @@ function setupEventListeners() {
     expenseForm.addEventListener('submit', handleExpenseSubmit);
     categoryForm.addEventListener('submit', handleCategorySubmit);
 
+    // Custom Category Select Toggle
     const expenseCategorySelected = document.getElementById('expenseCategorySelected');
     if (expenseCategorySelected) {
         expenseCategorySelected.addEventListener('click', (e) => {
@@ -135,6 +216,7 @@ function setupEventListeners() {
 
     window.addEventListener('click', (e) => {
         modals.forEach(modal => { if (e.target === modal) closeModal(modal); });
+
         if (!e.target.closest('.custom-select')) {
             const expenseOpts = document.getElementById('expenseCategoryOptions');
             if (expenseOpts) expenseOpts.classList.add('select-hide');
@@ -146,6 +228,32 @@ function setupEventListeners() {
     });
 }
 
+function setupIconPicker() {
+    const availableIcons = ['tag', 'shopping-bag', 'shopping-cart', 'truck', 'home', 'coffee', 'film', 'credit-card', 'zap', 'briefcase', 'heart', 'gift', 'activity', 'bookmark', 'box'];
+    const picker = document.getElementById('iconPicker');
+    picker.innerHTML = availableIcons.map(icon => `<div data-icon="${icon}"><i data-feather="${icon}"></i></div>`).join('');
+
+    const hiddenInput = document.getElementById('newCategoryIcon');
+    const currentIcon = document.getElementById('currentCategoryIcon');
+    const iconBtn = document.getElementById('categoryIconBtn');
+
+    picker.querySelectorAll('div').forEach(div => {
+        div.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const icon = div.dataset.icon;
+            hiddenInput.value = icon;
+            currentIcon.setAttribute('data-feather', icon);
+            feather.replace();
+            picker.classList.add('select-hide');
+        });
+    });
+
+    iconBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        picker.classList.toggle('select-hide');
+    });
+}
+
 function openModal(modal) { modal.classList.add('active'); }
 function closeModal(modal) { modal.classList.remove('active'); }
 
@@ -154,17 +262,10 @@ function populateCategoriesDropdown() {
     const selectedContainer = document.getElementById('expenseCategorySelected');
     const hiddenInput = document.getElementById('expenseCategory');
 
-    optionsContainer.innerHTML = categories.map(cat => `
-        <div data-value="${cat.id}">
-            <i data-feather="${cat.icon || 'tag'}"></i>
-            <span>${cat.name}</span>
-        </div>
-    `).join('');
-
+    optionsContainer.innerHTML = categories.map(cat => `<div data-value="${cat.id}"><i data-feather="${cat.icon || 'tag'}"></i><span>${cat.name}</span></div>`).join('');
     feather.replace();
 
-    const options = optionsContainer.querySelectorAll('div');
-    options.forEach(opt => {
+    optionsContainer.querySelectorAll('div').forEach(opt => {
         opt.addEventListener('click', () => {
             hiddenInput.value = opt.dataset.value;
             const cat = categories.find(c => c.id === hiddenInput.value);
@@ -174,9 +275,8 @@ function populateCategoriesDropdown() {
         });
     });
 
-    if (categories.length > 0) {
-        const defaultCatId = hiddenInput.value || categories[0].id;
-        const defaultCat = categories.find(c => c.id === defaultCatId) || categories[0];
+    if (categories.length > 0 && !hiddenInput.value) {
+        const defaultCat = categories[0];
         hiddenInput.value = defaultCat.id;
         selectedContainer.innerHTML = `<span class="select-text" style="display: flex; align-items: center; gap: 8px;"><i data-feather="${defaultCat.icon || 'tag'}" style="width: 16px; height: 16px;"></i> ${defaultCat.name}</span><i data-feather="chevron-down" style="width: 16px; height: 16px;"></i>`;
         feather.replace();
@@ -204,26 +304,22 @@ function updateUI() {
 
     const filteredExpenses = filterExpensesByPeriod(expenses, currentPeriod, now);
     const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
-    totalAmountEl.innerText = `$${total.toFixed(2)}`;
+    totalAmountEl.innerText = `$${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     renderExpenses(filteredExpenses);
 }
 
 function filterExpensesByPeriod(allExpenses, period, currentDate) {
     return allExpenses.filter(exp => {
         const expDate = new Date(exp.date);
-
         if (exp.type === 'recurring') {
             if (period === 'annual') return true;
             if (period === 'monthly' && (exp.recurrence === 'monthly' || exp.recurrence === 'biweekly')) return true;
             if (period === 'biweekly' && exp.recurrence === 'biweekly') return true;
         }
-
         if (period === 'annual') return expDate.getFullYear() === currentDate.getFullYear();
         if (period === 'monthly') return expDate.getFullYear() === currentDate.getFullYear() && expDate.getMonth() === currentDate.getMonth();
         if (period === 'biweekly') {
-            return expDate.getFullYear() === currentDate.getFullYear() &&
-                expDate.getMonth() === currentDate.getMonth() &&
-                (expDate.getDate() <= 15) === (currentDate.getDate() <= 15);
+            return expDate.getFullYear() === currentDate.getFullYear() && expDate.getMonth() === currentDate.getMonth() && (expDate.getDate() <= 15) === (currentDate.getDate() <= 15);
         }
         return true;
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -231,17 +327,11 @@ function filterExpensesByPeriod(allExpenses, period, currentDate) {
 
 function renderExpenses(expensesToRender) {
     if (expensesToRender.length === 0) {
-        expensesContainer.innerHTML = `
-            <div class="empty-state">
-                <i data-feather="inbox" style="width: 48px; height: 48px; opacity: 0.2; margin-bottom: 1rem;"></i>
-                <p>No hay gastos en este periodo.</p>
-            </div>
-        `;
+        expensesContainer.innerHTML = `<div class="empty-state"><i data-feather="inbox" style="width:48px;height:48px;opacity:0.2;margin-bottom:1rem;"></i><p>No hay gastos en este periodo.</p></div>`;
         feather.replace();
         return;
     }
 
-    // Agrupar por categoría
     const grouped = expensesToRender.reduce((acc, exp) => {
         if (!acc[exp.categoryId]) acc[exp.categoryId] = [];
         acc[exp.categoryId].push(exp);
@@ -256,90 +346,71 @@ function renderExpenses(expensesToRender) {
             <div class="category-group" id="group-${catId}">
                 <div class="category-header" onclick="toggleCategoryGroup('${catId}')">
                     <div class="category-title">
-                        <div class="category-icon-bg">
-                            <i data-feather="${cat.icon || 'tag'}"></i>
-                        </div>
+                        <div class="category-icon-bg"><i data-feather="${cat.icon || 'tag'}"></i></div>
                         <div class="category-name-wrap">
                             <span class="category-group-name">${cat.name}</span>
                             <span class="category-item-count">${items.length} movimientos</span>
                         </div>
                     </div>
                     <div class="category-total-wrap">
-                        <span class="category-group-total">$${catTotal.toFixed(2)}</span>
+                        <span class="category-group-total">$${catTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         <i data-feather="chevron-down" class="chevron-icon"></i>
                     </div>
                 </div>
                 <div class="category-content" id="content-${catId}">
-                    ${items.map(exp => {
-            const isRecurring = exp.type === 'recurring';
-            return `
-                            <div class="expense-item mini">
-                                <div class="expense-info">
-                                    <span class="expense-name">${exp.name}</span>
-                                    <div class="expense-meta">
-                                        <span>${new Date(exp.date + 'T12:00:00').toLocaleDateString()}</span>
-                                        ${isRecurring ? `<span class="meta-dot"></span><span><i data-feather="refresh-cw" style="width:10px;height:10px;"></i> ${exp.recurrence}</span>` : ''}
-                                    </div>
-                                </div>
-                                <div class="expense-amount-wrap">
-                                    <span class="expense-item-amount">$${parseFloat(exp.amount).toFixed(2)}</span>
-                                    <div class="expense-actions">
-                                        <button class="icon-btn edit-btn" data-id="${exp.id}"><i data-feather="edit-2"></i></button>
-                                        <button class="icon-btn delete-btn" data-id="${exp.id}"><i data-feather="trash-2"></i></button>
-                                    </div>
+                    ${items.map(exp => `
+                        <div class="expense-item mini">
+                            <div class="expense-info">
+                                <span class="expense-name">${exp.name}</span>
+                                <div class="expense-meta">
+                                    <span>${new Date(exp.date + 'T12:00:00').toLocaleDateString()}</span>
+                                    ${exp.type === 'recurring' ? `<span class="meta-dot"></span><span><i data-feather="refresh-cw" style="width:10px;height:10px;"></i> ${exp.recurrence}</span>` : ''}
                                 </div>
                             </div>
-                        `;
-        }).join('')}
+                            <div class="expense-amount-wrap">
+                                <span class="expense-item-amount">$${parseFloat(exp.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                <div class="expense-actions">
+                                    <button class="icon-btn edit-btn" data-id="${exp.id}"><i data-feather="edit-2"></i></button>
+                                    <button class="icon-btn delete-btn" data-id="${exp.id}"><i data-feather="trash-2"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `;
     }).join('');
 
     feather.replace();
-
-    document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        editExpense(e.currentTarget.dataset.id);
-    }));
-    document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteExpense(e.currentTarget.dataset.id);
-    }));
+    expensesContainer.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); editExpense(btn.dataset.id); }));
+    expensesContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); deleteExpense(btn.dataset.id); }));
 }
 
 window.toggleCategoryGroup = function (catId) {
-    const content = document.getElementById(`content-${catId}`);
     const group = document.getElementById(`group-${catId}`);
-    const isOpen = group.classList.contains('open');
-
-    // Cerrar otros si se desea (opcional)
-    // document.querySelectorAll('.category-group').forEach(g => g.classList.remove('open'));
-
-    if (isOpen) {
-        group.classList.remove('open');
-    } else {
-        group.classList.add('open');
-    }
+    group.classList.toggle('open');
 };
 
-function handleExpenseSubmit(e) {
+async function handleExpenseSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('expenseId').value;
     const expenseObj = {
-        id: id || Date.now().toString(),
         name: document.getElementById('expenseName').value,
-        amount: document.getElementById('expenseAmount').value,
+        amount: parseFloat(document.getElementById('expenseAmount').value),
         date: document.getElementById('expenseDate').value,
         categoryId: document.getElementById('expenseCategory').value,
         type: document.getElementById('expenseType').value,
-        recurrence: document.getElementById('expenseType').value === 'recurring' ? document.getElementById('expenseRecurrence').value : null
+        recurrence: document.getElementById('expenseType').value === 'recurring' ? document.getElementById('expenseRecurrence').value : null,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    expenses = id ? expenses.map(exp => exp.id === id ? expenseObj : exp) : [...expenses, expenseObj];
-    saveData();
+    const userExpensesRef = db.collection('users').doc(currentUser.uid).collection('expenses');
+    if (id) {
+        await userExpensesRef.doc(id).update(expenseObj);
+    } else {
+        await userExpensesRef.add(expenseObj);
+    }
     closeModal(expenseModal);
-    updateUI();
 }
 
 function editExpense(id) {
@@ -363,17 +434,14 @@ function editExpense(id) {
     const typeSelect = document.getElementById('expenseType');
     typeSelect.value = exp.type;
     typeSelect.dispatchEvent(new Event('change'));
-
     if (exp.type === 'recurring') document.getElementById('expenseRecurrence').value = exp.recurrence;
 
     openModal(expenseModal);
 }
 
-function deleteExpense(id) {
+async function deleteExpense(id) {
     if (confirm('¿Seguro que deseas eliminar este gasto?')) {
-        expenses = expenses.filter(e => e.id !== id);
-        saveData();
-        updateUI();
+        await db.collection('users').doc(currentUser.uid).collection('expenses').doc(id).delete();
     }
 }
 
@@ -381,42 +449,28 @@ function renderCategories() {
     categoriesListEl.innerHTML = categories.map(cat => `
         <div class="category-item">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div class="category-icon-bg mini">
-                    <i data-feather="${cat.icon || 'tag'}" style="width: 14px; height: 14px;"></i>
-                </div>
+                <div class="category-icon-bg mini"><i data-feather="${cat.icon || 'tag'}" style="width: 14px; height: 14px;"></i></div>
                 <span>${cat.name}</span>
             </div>
             <button class="icon-btn delete-btn" data-id="${cat.id}"><i data-feather="trash-2"></i></button>
         </div>
     `).join('');
     feather.replace();
-    categoriesListEl.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteCategory(e.currentTarget.dataset.id)));
+    categoriesListEl.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteCategory(btn.dataset.id)));
 }
 
-function handleCategorySubmit(e) {
+async function handleCategorySubmit(e) {
     e.preventDefault();
     const input = document.getElementById('newCategoryName');
-    const iconSelect = document.getElementById('newCategoryIcon');
+    const icon = document.getElementById('newCategoryIcon').value;
     const name = input.value.trim();
-    const icon = iconSelect.value;
     if (name) {
-        categories.push({ id: Date.now().toString(), name, icon });
-        saveData();
+        await db.collection('users').doc(currentUser.uid).collection('categories').add({ name, icon });
         input.value = '';
-        renderCategories();
     }
 }
 
-function deleteCategory(id) {
+async function deleteCategory(id) {
     if (expenses.some(e => e.categoryId === id)) return alert('No puedes eliminar una categoría que está en uso.');
-    categories = categories.filter(c => c.id !== id);
-    saveData();
-    renderCategories();
+    await db.collection('users').doc(currentUser.uid).collection('categories').doc(id).delete();
 }
-
-function saveData() {
-    localStorage.setItem('expenses', JSON.stringify(expenses));
-    localStorage.setItem('categories', JSON.stringify(categories));
-}
-
-init();

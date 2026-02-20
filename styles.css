@@ -39,6 +39,72 @@ body {
     color: var(--text-main);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+}
+
+/* Auth Screens */
+.auth-container {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-color);
+    padding: 1.5rem;
+}
+
+.auth-card {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 400px;
+    padding: 2.5rem;
+    border-radius: 24px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.06);
+    text-align: center;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.logo.large {
+    font-size: 2rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.auth-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.auth-card p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+}
+
+.auth-form {
+    text-align: left;
+    margin-bottom: 1.5rem;
+}
+
+.auth-switch {
+    font-size: 0.9rem;
+}
+
+.auth-switch a {
+    color: var(--text-main);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+.logout-btn {
+    opacity: 0.6;
+}
+
+.logout-btn:hover {
+    opacity: 1;
+    color: var(--danger);
 }
 
 .app-container {
