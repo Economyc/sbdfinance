@@ -61,8 +61,16 @@
 </head>
 
 <body class="auth-required">
+    <!-- Splash Screen (prevents login flash) -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="logo large">
+            <i data-feather="feather"></i>
+            <span>Balance</span>
+        </div>
+    </div>
+
     <!-- Login Screen -->
-    <div id="authContainer" class="auth-container">
+    <div id="authContainer" class="auth-container" style="display: none;">
         <div class="auth-card">
             <div class="logo large">
                 <i data-feather="feather"></i>
@@ -183,26 +191,28 @@
                         </div>
                         <input type="hidden" id="expenseCategory" required>
                     </div>
-                    <div class="form-group">
-                        <label for="expenseType">Tipo de Pago</label>
-                        <select id="expenseType" required>
-                            <option value="one-time">Único (Compra específica)</option>
-                            <option value="recurring">Recurrente (Suscripción/Deuda)</option>
-                        </select>
+                    <div class="form-group row">
+                        <div class="col">
+                            <label for="expenseType">Tipo</label>
+                            <select id="expenseType" required>
+                                <option value="one-time">Único</option>
+                                <option value="recurring">Recurrente</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label for="expenseStatus">Estado</label>
+                            <select id="expenseStatus" required>
+                                <option value="pending">Pendiente</option>
+                                <option value="paid">Pagado</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group" id="recurrencePeriodGroup" style="display:none;">
-                        <label for="expenseRecurrence">Periodo de Recurrencia</label>
+                        <label for="expenseRecurrence">Recurrencia</label>
                         <select id="expenseRecurrence">
                             <option value="biweekly">Quincenal</option>
                             <option value="monthly">Mensual</option>
                             <option value="annual">Anual</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="expenseStatus">Estado</label>
-                        <select id="expenseStatus" required>
-                            <option value="pending">Pendiente por pagar</option>
-                            <option value="paid">Pagado</option>
                         </select>
                     </div>
                     <button type="submit" class="submit-btn">Guardar</button>

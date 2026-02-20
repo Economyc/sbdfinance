@@ -96,6 +96,11 @@ auth.onAuthStateChanged(user => {
         mainAppContainer.style.display = 'none';
         stopSync();
     }
+    const splash = document.getElementById('splashScreen');
+    if (splash) {
+        splash.classList.add('hidden');
+        setTimeout(() => splash.remove(), 400);
+    }
     feather.replace();
 });
 
