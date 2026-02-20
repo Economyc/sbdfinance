@@ -20,6 +20,12 @@ let unsubscribeExpenses = null;
 let unsubscribeCategories = null;
 
 let currentPeriod = 'biweekly';
+let activeFilters = {
+    search: '',
+    category: 'all',
+    type: 'all'
+};
+
 let currentTheme = localStorage.getItem('theme') || 'light';
 if (currentTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 
@@ -43,6 +49,7 @@ const expensesContainer = document.getElementById('expensesContainer');
 
 const addExpenseBtn = document.getElementById('addExpenseBtn');
 const openCategoriesBtn = document.getElementById('openCategoriesBtn');
+const filterBtn = document.getElementById('filterBtn');
 const modals = document.querySelectorAll('.modal-overlay');
 const closeBtns = document.querySelectorAll('.close-modal');
 
@@ -54,6 +61,10 @@ const recurrencePeriodGroup = document.getElementById('recurrencePeriodGroup');
 const categoriesModal = document.getElementById('categoriesModal');
 const categoryForm = document.getElementById('categoryForm');
 const categoriesListEl = document.getElementById('categoriesList');
+
+const filterModal = document.getElementById('filterModal');
+const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
 // Auth State Monitor
 auth.onAuthStateChanged(user => {
@@ -86,6 +97,7 @@ function startSync() {
             } else {
                 updateUI();
                 renderCategories();
+                populateFilterCategories();
             }
         });
 
@@ -135,40 +147,45 @@ function setupEventListeners() {
         feather.replace();
     });
 
-    // PIN Input Logic
+    // PIN Input Logic Improvement
     pinInputs.forEach((input, index) => {
         input.addEventListener('input', (e) => {
-            if (e.target.value.length === 1 && index < 3) {
-                pinInputs[index + 1].focus();
+            const val = e.target.value;
+            if (val.length === 1) {
+                if (index < 3) {
+                    pinInputs[index + 1].focus();
+                } else {
+                    // Automatically submit if last digit is entered
+                    loginForm.dispatchEvent(new Event('submit'));
+                }
+            } else if (val.length > 1) {
+                // Prevent multiple digits in one box if typed too fast
+                e.target.value = val.charAt(0);
+                if (index < 3) pinInputs[index + 1].focus();
             }
         });
+
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
                 pinInputs[index - 1].focus();
             }
         });
+
+        // Focus and select for better overlay typing
+        input.addEventListener('focus', () => input.select());
     });
 
-    // PIN Auth Logic (Using Anonymous Login mapped to PIN)
+    // PIN Auth Logic
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const pin = pinInputs.map(input => input.value).join('');
-        if (pin.length !== 4) return alert('Ingresa un código de 4 dígitos');
+        if (pin.length !== 4) return; // Don't alert yet if incomplete, unless manual submit
 
         try {
-            // Check if this PIN already has a mapping in Firestore
             const pinMapping = await db.collection('pin_mappings').doc(pin).get();
             if (pinMapping.exists) {
-                const { customToken } = pinMapping.data();
-                // In a real prod environment, we'd use a Cloud Function to exchange PIN for Token.
-                // For this demo/fast dev, we'll store the UserUID and sign in anonymously.
-                // Note: Anonymous users aren't easily "recovered" by PIN without a mapping.
-
-                // We'll simulate a persistent experience by using the unique mapping
-                // For simplicity in this env, we perform Anonymous Auth and link the PIN to that UID locally.
                 await auth.signInAnonymously();
             } else {
-                // First time with this PIN
                 const userCredential = await auth.signInAnonymously();
                 await db.collection('pin_mappings').doc(pin).set({
                     uid: userCredential.user.uid,
@@ -190,6 +207,35 @@ function setupEventListeners() {
             currentPeriod = e.target.dataset.period;
             updateUI();
         });
+    });
+
+    // Filters
+    filterBtn.addEventListener('click', () => openModal(filterModal));
+
+    applyFiltersBtn.addEventListener('click', () => {
+        activeFilters.search = document.getElementById('filterSearch').value.toLowerCase();
+        activeFilters.category = document.getElementById('filterCategory').value;
+        activeFilters.type = document.getElementById('filterType').value;
+
+        // Visual indicator of active filters
+        if (activeFilters.search || activeFilters.category !== 'all' || activeFilters.type !== 'all') {
+            filterBtn.style.color = 'var(--primary)';
+        } else {
+            filterBtn.style.color = '';
+        }
+
+        updateUI();
+        closeModal(filterModal);
+    });
+
+    clearFiltersBtn.addEventListener('click', () => {
+        document.getElementById('filterSearch').value = '';
+        document.getElementById('filterCategory').value = 'all';
+        document.getElementById('filterType').value = 'all';
+        activeFilters = { search: '', category: 'all', type: 'all' };
+        filterBtn.style.color = '';
+        updateUI();
+        closeModal(filterModal);
     });
 
     // Modals
@@ -237,6 +283,14 @@ function setupEventListeners() {
             if (iconPicker) iconPicker.classList.add('select-hide');
         }
     });
+}
+
+function populateFilterCategories() {
+    const filterCatSelect = document.getElementById('filterCategory');
+    const currentValue = filterCatSelect.value;
+    filterCatSelect.innerHTML = '<option value="all">Todas las categorías</option>' +
+        categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+    filterCatSelect.value = currentValue || 'all';
 }
 
 function setupIconPicker() {
@@ -304,7 +358,21 @@ function updateUI() {
         dateStr = `${now.getFullYear()}`;
     }
     currentDateLabelEl.innerText = dateStr;
-    const filteredExpenses = filterExpensesByPeriod(expenses, currentPeriod, now);
+
+    // Combine period filtering and active filters
+    let filteredExpenses = filterExpensesByPeriod(expenses, currentPeriod, now);
+
+    // Apply additional filters
+    if (activeFilters.search) {
+        filteredExpenses = filteredExpenses.filter(exp => exp.name.toLowerCase().includes(activeFilters.search));
+    }
+    if (activeFilters.category !== 'all') {
+        filteredExpenses = filteredExpenses.filter(exp => exp.categoryId === activeFilters.category);
+    }
+    if (activeFilters.type !== 'all') {
+        filteredExpenses = filteredExpenses.filter(exp => exp.type === activeFilters.type);
+    }
+
     const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
     totalAmountEl.innerText = `$${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     renderExpenses(filteredExpenses);
@@ -329,7 +397,7 @@ function filterExpensesByPeriod(allExpenses, period, currentDate) {
 
 function renderExpenses(expensesToRender) {
     if (expensesToRender.length === 0) {
-        expensesContainer.innerHTML = `<div class="empty-state"><i data-feather="inbox" style="width:48px;height:48px;opacity:0.2;margin-bottom:1rem;"></i><p>No hay gastos en este periodo.</p></div>`;
+        expensesContainer.innerHTML = `<div class="empty-state"><i data-feather="inbox" style="width:48px;height:48px;opacity:0.2;margin-bottom:1rem;"></i><p>No hay gastos que coincidan.</p></div>`;
         feather.replace();
         return;
     }
