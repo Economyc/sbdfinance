@@ -1,11 +1,11 @@
 const firebaseConfig = {
-    projectId: "bukzbrain-v2-glow-bright",
-    appId: "1:968115218436:web:3e07405d722500f2d96d51",
-    storageBucket: "bukzbrain-v2-glow-bright.firebasestorage.app",
-    apiKey: "AIzaSyBZQSdTIPRZLljaucFFLiG2WiWbSfpDnYI",
-    authDomain: "bukzbrain-v2-glow-bright.firebaseapp.com",
-    messagingSenderId: "968115218436",
-    projectNumber: "968115218436"
+    projectId: "control-gastos-paz-financiera",
+    appId: "1:774617150915:web:b76fef8922d95fc1d9b976",
+    storageBucket: "control-gastos-paz-financiera.firebasestorage.app",
+    apiKey: "AIzaSyDxjCsaTYu2A7fkgt414kxNV_LL_TDw9oA",
+    authDomain: "control-gastos-paz-financiera.firebaseapp.com",
+    messagingSenderId: "774617150915",
+    projectNumber: "774617150915"
 };
 
 // Initialize Firebase
