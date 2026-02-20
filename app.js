@@ -14,7 +14,6 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 let currentUser = null;
-let currentPin = localStorage.getItem('access_pin') || null;
 let expenses = [];
 let categories = [];
 let unsubscribeExpenses = null;
@@ -33,13 +32,7 @@ if (currentTheme === 'dark') document.documentElement.setAttribute('data-theme',
 // DOM Elements
 const authContainer = document.getElementById('authContainer');
 const mainAppContainer = document.getElementById('mainAppContainer');
-const loginForm = document.getElementById('loginForm');
-const pinInputs = [
-    document.getElementById('pin-1'),
-    document.getElementById('pin-2'),
-    document.getElementById('pin-3'),
-    document.getElementById('pin-4')
-];
+const googleLoginBtn = document.getElementById('googleLoginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 
 const periodBtns = document.querySelectorAll('.period-btn');
@@ -69,7 +62,7 @@ const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
 // Auth State Monitor
 auth.onAuthStateChanged(user => {
-    if (user && currentPin) {
+    if (user) {
         currentUser = user;
         authContainer.style.display = 'none';
         mainAppContainer.style.display = 'flex';
@@ -93,53 +86,15 @@ function initApp() {
 }
 
 function setupAuthEventListeners() {
-    // SNAPPY PIN Sequence
-    pinInputs.forEach((input, index) => {
-        input.addEventListener('input', (e) => {
-            const val = e.data || e.target.value;
-            if (val && val.length > 0) {
-                e.target.value = val.slice(-1);
-                if (index < 3) {
-                    setTimeout(() => pinInputs[index + 1].focus(), 10);
-                } else {
-                    setTimeout(() => loginForm.dispatchEvent(new Event('submit')), 10);
-                }
-            }
-        });
-
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace') {
-                if (e.target.value === '' && index > 0) {
-                    pinInputs[index - 1].focus();
-                } else {
-                    e.target.value = '';
-                }
-            }
-        });
-        input.addEventListener('focus', () => input.select());
-    });
-
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const pin = pinInputs.map(input => input.value).join('');
-        if (pin.length !== 4) return;
-
+    // Google Login Logic
+    googleLoginBtn.addEventListener('click', async () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            // Simply use the PIN as the data key and get an anonymous session
-            await auth.signInAnonymously();
-            currentPin = pin;
-            localStorage.setItem('access_pin', pin);
+            await auth.signInWithPopup(provider);
         } catch (err) {
             console.error(err);
-            alert("Error al acceder. Revisa tu conexión.");
+            alert("Error al acceder con Google. Revisa tu conexión.");
         }
-    });
-
-    // Logout
-    logoutBtn.addEventListener('click', () => {
-        auth.signOut();
-        localStorage.removeItem('access_pin');
-        currentPin = null;
     });
 
     // Theme toggle (must work anywhere)
@@ -158,10 +113,10 @@ function setupAuthEventListeners() {
 }
 
 function startSync() {
-    if (!currentPin) return;
-    const pinRef = db.collection('pins').doc(currentPin);
+    if (!currentUser) return;
+    const userRef = db.collection('users').doc(currentUser.uid);
 
-    unsubscribeCategories = pinRef.collection('categories')
+    unsubscribeCategories = userRef.collection('categories')
         .onSnapshot(snapshot => {
             categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             if (categories.length === 0) {
@@ -173,7 +128,7 @@ function startSync() {
             }
         }, err => console.error("Categories sync error:", err));
 
-    unsubscribeExpenses = pinRef.collection('expenses')
+    unsubscribeExpenses = userRef.collection('expenses')
         .onSnapshot(snapshot => {
             expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             updateUI();
@@ -197,15 +152,17 @@ async function seedCategories() {
         { name: 'Ocio', icon: 'film' }
     ];
     const batch = db.batch();
-    const pinRef = db.collection('pins').doc(currentPin);
+    const userRef = db.collection('users').doc(currentUser.uid);
     defaultCategories.forEach(cat => {
-        const newRef = pinRef.collection('categories').doc();
+        const newRef = userRef.collection('categories').doc();
         batch.set(newRef, cat);
     });
     await batch.commit();
 }
 
 function setupAppEventListeners() {
+    logoutBtn.addEventListener('click', () => auth.signOut());
+
     // Periods
     periodBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -390,9 +347,9 @@ async function handleExpenseSubmit(e) {
         recurrence: document.getElementById('expenseType').value === 'recurring' ? document.getElementById('expenseRecurrence').value : null,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
-    const pinRef = db.collection('pins').doc(currentPin);
-    if (id) await pinRef.collection('expenses').doc(id).update(expenseObj);
-    else await pinRef.collection('expenses').add(expenseObj);
+    const userRef = db.collection('users').doc(currentUser.uid);
+    if (id) await userRef.collection('expenses').doc(id).update(expenseObj);
+    else await userRef.collection('expenses').add(expenseObj);
     closeModal(expenseModal);
 }
 
@@ -420,7 +377,7 @@ function editExpense(id) {
 
 async function deleteExpense(id) {
     if (confirm('¿Seguro que deseas eliminar este gasto?')) {
-        await db.collection('pins').doc(currentPin).collection('expenses').doc(id).delete();
+        await db.collection('users').doc(currentUser.uid).collection('expenses').doc(id).delete();
     }
 }
 
@@ -500,12 +457,12 @@ async function handleCategorySubmit(e) {
     const icon = document.getElementById('newCategoryIcon').value;
     const name = input.value.trim();
     if (name) {
-        await db.collection('pins').doc(currentPin).collection('categories').add({ name, icon });
+        await db.collection('users').doc(currentUser.uid).collection('categories').add({ name, icon });
         input.value = '';
     }
 }
 
 async function deleteCategory(id) {
     if (expenses.some(e => e.categoryId === id)) return alert('No puedes eliminar una categoría que está en uso.');
-    await db.collection('pins').doc(currentPin).collection('categories').doc(id).delete();
+    await db.collection('users').doc(currentUser.uid).collection('categories').doc(id).delete();
 }
