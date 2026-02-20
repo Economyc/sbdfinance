@@ -125,6 +125,7 @@
                 <p class="summary-label">Total <span id="currentPeriodLabel">Quincenal</span></p>
                 <h1 class="total-amount" id="totalAmount">$0.00</h1>
                 <p class="summary-date" id="currentDateLabel">Oct 1 - Oct 15</p>
+                <p class="pending-summary" id="pendingSummary" style="display:none;"></p>
             </section>
 
 
@@ -197,6 +198,13 @@
                             <option value="annual">Anual</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label for="expenseStatus">Estado</label>
+                        <select id="expenseStatus" required>
+                            <option value="pending">Pendiente por pagar</option>
+                            <option value="paid">Pagado</option>
+                        </select>
+                    </div>
                     <button type="submit" class="submit-btn">Guardar</button>
                 </form>
             </div>
@@ -262,6 +270,14 @@
                         <option value="all">Todos los tipos</option>
                         <option value="one-time">Único (Compra)</option>
                         <option value="recurring">Recurrente (Suscripción)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterStatus">Estado</label>
+                    <select id="filterStatus">
+                        <option value="all">Todos los estados</option>
+                        <option value="pending">Pendiente por pagar</option>
+                        <option value="paid">Pagado</option>
                     </select>
                 </div>
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">

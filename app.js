@@ -23,7 +23,8 @@ let currentPeriod = 'biweekly';
 let activeFilters = {
     search: '',
     category: 'all',
-    type: 'all'
+    type: 'all',
+    status: 'all'
 };
 
 let currentTheme = localStorage.getItem('theme') || 'light';
@@ -255,7 +256,9 @@ function setupAppEventListeners() {
         activeFilters.search = document.getElementById('filterSearch').value.toLowerCase();
         activeFilters.category = document.getElementById('filterCategory').value;
         activeFilters.type = document.getElementById('filterType').value;
-        filterBtn.style.color = (activeFilters.search || activeFilters.category !== 'all' || activeFilters.type !== 'all') ? 'var(--primary)' : '';
+        activeFilters.status = document.getElementById('filterStatus').value;
+        const hasFilter = activeFilters.search || activeFilters.category !== 'all' || activeFilters.type !== 'all' || activeFilters.status !== 'all';
+        filterBtn.style.color = hasFilter ? 'var(--primary)' : '';
         updateUI();
         closeModal(filterModal);
     });
@@ -263,7 +266,8 @@ function setupAppEventListeners() {
         document.getElementById('filterSearch').value = '';
         document.getElementById('filterCategory').value = 'all';
         document.getElementById('filterType').value = 'all';
-        activeFilters = { search: '', category: 'all', type: 'all' };
+        document.getElementById('filterStatus').value = 'all';
+        activeFilters = { search: '', category: 'all', type: 'all', status: 'all' };
         filterBtn.style.color = '';
         updateUI();
         closeModal(filterModal);
@@ -343,9 +347,20 @@ function updateUI() {
     if (activeFilters.search) filtered = filtered.filter(exp => exp.name.toLowerCase().includes(activeFilters.search));
     if (activeFilters.category !== 'all') filtered = filtered.filter(exp => exp.categoryId === activeFilters.category);
     if (activeFilters.type !== 'all') filtered = filtered.filter(exp => exp.type === activeFilters.type);
+    if (activeFilters.status !== 'all') filtered = filtered.filter(exp => (exp.status || 'pending') === activeFilters.status);
 
     const total = filtered.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
     totalAmountEl.innerText = total.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+    const pendingTotal = filtered.filter(exp => (exp.status || 'pending') === 'pending').reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+    const pendingSummaryEl = document.getElementById('pendingSummary');
+    if (pendingTotal > 0) {
+        pendingSummaryEl.innerText = `${pendingTotal.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })} pendiente por pagar`;
+        pendingSummaryEl.style.display = 'block';
+    } else {
+        pendingSummaryEl.style.display = 'none';
+    }
+
     renderExpenses(filtered);
 }
 
@@ -396,13 +411,17 @@ function renderExpenses(expensesToRender) {
                     </div>
                 </div>
                 <div class="category-content" id="content-${catId}">
-                    ${items.map(exp => `
+                    ${items.map(exp => {
+                        const isPaid = (exp.status || 'pending') === 'paid';
+                        return `
                         <div class="expense-item mini">
                             <div class="expense-info">
                                 <span class="expense-name">${exp.name}</span>
                                 <div class="expense-meta">
                                     <span>${new Date(exp.date + 'T12:00:00').toLocaleDateString()}</span>
                                     ${exp.type === 'recurring' ? `<span class="meta-dot"></span><span><i data-feather="refresh-cw" style="width:10px;height:10px;"></i> ${exp.recurrence}</span>` : ''}
+                                    <span class="meta-dot"></span>
+                                    <span class="status-badge ${isPaid ? 'status-paid' : 'status-pending'}">${isPaid ? 'Pagado' : 'Pendiente'}</span>
                                 </div>
                                 <div class="expense-actions">
                                     <button class="icon-btn edit-btn" data-id="${exp.id}"><i data-feather="edit-2"></i></button>
@@ -410,16 +429,18 @@ function renderExpenses(expensesToRender) {
                                 </div>
                             </div>
                             <div class="expense-amount-wrap">
+                                <button class="toggle-status-btn ${isPaid ? 'is-paid' : ''}" data-id="${exp.id}" title="${isPaid ? 'Marcar como pendiente' : 'Marcar como pagado'}"><i data-feather="${isPaid ? 'check-circle' : 'circle'}"></i></button>
                                 <span class="expense-item-amount">${parseFloat(exp.amount).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}</span>
                             </div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
             </div>`;
     }).join('');
     feather.replace();
     expensesContainer.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); editExpense(btn.dataset.id); }));
     expensesContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); deleteExpense(btn.dataset.id); }));
+    expensesContainer.querySelectorAll('.toggle-status-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); toggleExpenseStatus(btn.dataset.id); }));
 }
 
 window.toggleCategoryGroup = function (catId) {
@@ -437,6 +458,7 @@ async function handleExpenseSubmit(e) {
         categoryId: document.getElementById('expenseCategory').value,
         type: document.getElementById('expenseType').value,
         recurrence: document.getElementById('expenseType').value === 'recurring' ? document.getElementById('expenseRecurrence').value : null,
+        status: document.getElementById('expenseStatus').value,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     const userRef = db.collection('users').doc(currentUser.uid);
@@ -464,6 +486,7 @@ function editExpense(id) {
     typeSelect.value = exp.type;
     typeSelect.dispatchEvent(new Event('change'));
     if (exp.type === 'recurring') document.getElementById('expenseRecurrence').value = exp.recurrence;
+    document.getElementById('expenseStatus').value = exp.status || 'pending';
     openModal(expenseModal);
 }
 
@@ -471,6 +494,16 @@ async function deleteExpense(id) {
     if (confirm('¿Seguro que deseas eliminar este gasto?')) {
         await db.collection('users').doc(currentUser.uid).collection('expenses').doc(id).delete();
     }
+}
+
+async function toggleExpenseStatus(id) {
+    const exp = expenses.find(e => e.id === id);
+    if (!exp) return;
+    const newStatus = (exp.status || 'pending') === 'pending' ? 'paid' : 'pending';
+    await db.collection('users').doc(currentUser.uid).collection('expenses').doc(id).update({
+        status: newStatus,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 }
 
 function populateFilterCategories() {

@@ -43,7 +43,8 @@ body {
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
     overflow-x: hidden;
-    touch-action: pan-x pan-y;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
 }
 
 input,
@@ -437,6 +438,81 @@ header.scrolled {
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.45rem;
+    border-radius: 100px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+.status-pending {
+    background: rgba(230, 81, 0, 0.1);
+    color: #E65100;
+}
+
+.status-paid {
+    background: rgba(46, 125, 50, 0.1);
+    color: #2E7D32;
+}
+
+[data-theme="dark"] .status-pending {
+    background: rgba(255, 152, 0, 0.15);
+    color: #FFB74D;
+}
+
+[data-theme="dark"] .status-paid {
+    background: rgba(76, 175, 80, 0.15);
+    color: #81C784;
+}
+
+/* Pending summary in hero */
+.pending-summary {
+    font-size: 0.85rem;
+    color: #E65100;
+    margin-top: 0.25rem;
+}
+
+[data-theme="dark"] .pending-summary {
+    color: #FFB74D;
+}
+
+/* Quick toggle status button */
+.toggle-status-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.toggle-status-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.toggle-status-btn.is-paid {
+    color: #2E7D32;
+}
+
+[data-theme="dark"] .toggle-status-btn.is-paid {
+    color: #81C784;
+}
+
+.toggle-status-btn:hover {
+    background: var(--bg-color);
 }
 
 .meta-dot {
@@ -537,9 +613,11 @@ header.scrolled {
 
 .form-group.row .col {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    overflow: hidden;
 }
 
 label {
@@ -552,6 +630,7 @@ input,
 select {
     font-family: inherit;
     width: 100%;
+    min-width: 0;
     padding: 0.8rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 12px;
