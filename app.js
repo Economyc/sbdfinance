@@ -172,14 +172,21 @@ function setupAppEventListeners() {
         dropdownMenu.classList.toggle('active');
     });
 
-    // Sticky Header Scroll Effect
+    // Sticky Header Scroll Effect (Optimized)
+    let isScrolling = false;
     window.addEventListener('scroll', () => {
-        if (window.scrollY > 20) {
-            appHeader.classList.add('scrolled');
-        } else {
-            appHeader.classList.remove('scrolled');
+        if (!isScrolling) {
+            window.requestAnimationFrame(() => {
+                if (window.scrollY > 20) {
+                    appHeader.classList.add('scrolled');
+                } else {
+                    appHeader.classList.remove('scrolled');
+                }
+                isScrolling = false;
+            });
+            isScrolling = true;
         }
-    });
+    }, { passive: true });
 
     logoutBtn.addEventListener('click', () => {
         dropdownMenu.classList.remove('active');
@@ -254,12 +261,26 @@ function setupAppEventListeners() {
         });
     }
 
-    window.addEventListener('click', (e) => {
+    const closeMenuAndSelects = (e) => {
         modals.forEach(modal => { if (e.target === modal) closeModal(modal); });
-        if (!e.target.closest('.custom-select')) document.getElementById('expenseCategoryOptions').classList.add('select-hide');
-        if (!e.target.closest('#categoryForm')) document.getElementById('iconPicker').classList.add('select-hide');
-        if (!e.target.closest('.menu-container')) dropdownMenu.classList.remove('active');
-    });
+
+        const expenseCategoryOptions = document.getElementById('expenseCategoryOptions');
+        if (expenseCategoryOptions && !e.target.closest('.custom-select')) {
+            expenseCategoryOptions.classList.add('select-hide');
+        }
+
+        const iconPicker = document.getElementById('iconPicker');
+        if (iconPicker && !e.target.closest('#categoryForm')) {
+            iconPicker.classList.add('select-hide');
+        }
+
+        if (dropdownMenu && !e.target.closest('.menu-container')) {
+            dropdownMenu.classList.remove('active');
+        }
+    };
+
+    document.addEventListener('click', closeMenuAndSelects);
+    document.addEventListener('touchstart', closeMenuAndSelects, { passive: true });
 }
 
 function updateUI() {

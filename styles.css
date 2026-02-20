@@ -810,3 +810,15 @@ select:focus {
         opacity: 1;
     }
 }
+
+/* Active States for Snappy Feedback */
+button:active {
+    transform: scale(0.95);
+    transition: transform 0.05s ease-out;
+}
+
+.category-header:active,
+.expense-item:active {
+    transform: scale(0.98);
+    transition: transform 0.05s ease-out;
+}
