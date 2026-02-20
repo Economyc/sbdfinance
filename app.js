@@ -457,7 +457,7 @@ function setupIconPicker() {
             e.stopPropagation();
             const icon = div.dataset.icon;
             hiddenInput.value = icon;
-            currentIcon.setAttribute('data-feather', icon);
+            iconBtn.innerHTML = `<i data-feather="${icon}" id="currentCategoryIcon"></i>`;
             feather.replace();
             picker.classList.add('select-hide');
         });
@@ -518,7 +518,7 @@ function editCategory(id) {
     document.getElementById('categoryId').value = cat.id;
     document.getElementById('newCategoryName').value = cat.name;
     document.getElementById('newCategoryIcon').value = cat.icon || 'tag';
-    document.getElementById('currentCategoryIcon').setAttribute('data-feather', cat.icon || 'tag');
+    document.getElementById('categoryIconBtn').innerHTML = `<i data-feather="${cat.icon || 'tag'}" id="currentCategoryIcon"></i>`;
     feather.replace();
 }
 
@@ -538,7 +538,7 @@ async function handleCategorySubmit(e) {
         input.value = '';
         document.getElementById('categoryId').value = '';
         document.getElementById('newCategoryIcon').value = 'tag';
-        document.getElementById('currentCategoryIcon').setAttribute('data-feather', 'tag');
+        document.getElementById('categoryIconBtn').innerHTML = `<i data-feather="tag" id="currentCategoryIcon"></i>`;
         feather.replace();
     }
 }
