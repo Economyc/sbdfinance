@@ -78,6 +78,8 @@ auth.onAuthStateChanged(user => {
     feather.replace();
 });
 
+// Process redirect result after returning from Google Sign-In
+auth.getRedirectResult().catch(() => {});
 
 // Setup Auth Listeners Immediately
 setupAuthEventListeners();
