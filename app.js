@@ -94,24 +94,11 @@ function setupAuthEventListeners() {
     // Google Login Logic
     googleLoginBtn.addEventListener('click', async () => {
         const provider = new firebase.auth.GoogleAuthProvider();
-        // In standalone PWA mode (added to home screen), redirect auth opens in Safari
-        // and never returns to the PWA — use popup instead.
-        const isStandalone = window.navigator.standalone === true ||
-            window.matchMedia('(display-mode: standalone)').matches;
         try {
-            if (isStandalone) {
-                await auth.signInWithPopup(provider);
-            } else {
-                await auth.signInWithRedirect(provider);
-            }
+            await auth.signInWithRedirect(provider);
         } catch (err) {
-            if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
-                // Popup was blocked — fall back to redirect
-                try { await auth.signInWithRedirect(provider); } catch (e) { console.error(e); }
-            } else if (err.code !== 'auth/popup-closed-by-user') {
-                console.error(err);
-                alert("Error al acceder con Google. Revisa tu conexión.");
-            }
+            console.error(err);
+            alert("Error al acceder con Google. Revisa tu conexión.");
         }
     });
 
