@@ -69,25 +69,13 @@
                 <span>Balance</span>
             </div>
 
-            <div id="loginSection" class="auth-form"
-                style="display: flex; flex-direction: column; gap: 0.75rem; align-items: center; margin-top: 2rem; width: 100%;">
-                <p style="margin-bottom: 0.5rem; font-size: 0.95rem;">Controla tus finanzas con calma y claridad.</p>
-                <input id="authEmail" type="email" placeholder="Correo electrónico" autocomplete="email"
-                    style="width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg, var(--card-bg)); color: var(--text); font-size: 1rem; box-sizing: border-box;" />
-                <input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password"
-                    style="width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg, var(--card-bg)); color: var(--text); font-size: 1rem; box-sizing: border-box;" />
-                <button id="loginBtn" class="primary-btn"
-                    style="width: 100%; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 500;">
-                    Iniciar sesión
-                </button>
-                <button id="registerBtn"
-                    style="background: none; border: none; color: var(--accent); font-size: 0.9rem; cursor: pointer; padding: 0.25rem;">
-                    ¿No tienes cuenta? Regístrate
-                </button>
-                <p id="authError" style="color: #e74c3c; font-size: 0.85rem; display: none; text-align: center;"></p>
+            <div id="loginSection" class="auth-form login-form">
+                <input id="authEmail" type="email" placeholder="Correo electrónico" autocomplete="email" />
+                <input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password" />
+                <button id="loginBtn" class="primary-btn login-btn">Iniciar sesión</button>
+                <button id="registerBtn" class="register-link">¿No tienes cuenta? Regístrate</button>
+                <p id="authError" class="auth-error"></p>
             </div>
-            <p class="auth-switch" style="font-size: 0.8rem; opacity: 0.7; margin-top: 1.5rem;">Tu información se
-                sincroniza automáticamente con tu cuenta.</p>
         </div>
     </div>
 
