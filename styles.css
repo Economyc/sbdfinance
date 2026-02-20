@@ -42,6 +42,14 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
+    overflow-x: hidden;
+    touch-action: pan-x pan-y;
+}
+
+input,
+select,
+button {
+    touch-action: none;
 }
 
 /* Auth Screens */
