@@ -1,1 +1,14 @@
-rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if request.auth != null; } } }
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permitir acceso a la colección pins si conoces el PIN (que es el ID del documento)
+    // Esto permite multi-dispositivo fácil
+    match /pins/{pin}/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    // El resto de colecciones (como pin_mappings si se usaran)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
