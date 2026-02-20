@@ -949,6 +949,11 @@ select:focus {
     .expense-actions {
         opacity: 1;
     }
+
+    .form-group.row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
 }
 
 /* Active States for Snappy Feedback */
