@@ -78,8 +78,6 @@ auth.onAuthStateChanged(user => {
     feather.replace();
 });
 
-// Process redirect result (needed when returning from signInWithRedirect)
-auth.getRedirectResult().catch(() => {});
 
 // Setup Auth Listeners Immediately
 setupAuthEventListeners();
