@@ -66,6 +66,9 @@ const filterModal = document.getElementById('filterModal');
 const applyFiltersBtn = document.getElementById('applyFiltersBtn');
 const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
+// Initialize Auth GUI Listeners Immediately
+setupAuthEventListeners();
+
 // Auth State Monitor
 auth.onAuthStateChanged(user => {
     if (user) {
@@ -83,7 +86,7 @@ auth.onAuthStateChanged(user => {
 });
 
 function initApp() {
-    setupEventListeners();
+    setupAppEventListeners();
     setupIconPicker();
     startSync();
 }
@@ -133,45 +136,35 @@ async function seedCategories() {
     await batch.commit();
 }
 
-function setupEventListeners() {
-    // Theme
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const themeIcon = document.getElementById('themeIcon');
-    if (currentTheme === 'dark') themeIcon.setAttribute('data-feather', 'sun');
-
-    themeToggleBtn.addEventListener('click', () => {
-        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', currentTheme);
-        localStorage.setItem('theme', currentTheme);
-        themeIcon.setAttribute('data-feather', currentTheme === 'light' ? 'moon' : 'sun');
-        feather.replace();
-    });
-
-    // PIN Input Logic Improvement
+// These events must work even when logged out
+function setupAuthEventListeners() {
+    // PIN Input Logic SNAPPY
     pinInputs.forEach((input, index) => {
         input.addEventListener('input', (e) => {
-            const val = e.target.value;
-            if (val.length === 1) {
+            const val = e.data || e.target.value; // Handle some mobile browsers better
+            if (val && val.length > 0) {
+                // Keep only the last character
+                e.target.value = val.slice(-1);
+
                 if (index < 3) {
-                    pinInputs[index + 1].focus();
+                    setTimeout(() => pinInputs[index + 1].focus(), 10);
                 } else {
-                    // Automatically submit if last digit is entered
-                    loginForm.dispatchEvent(new Event('submit'));
+                    // Last digit: Auto-submit
+                    setTimeout(() => loginForm.dispatchEvent(new Event('submit')), 10);
                 }
-            } else if (val.length > 1) {
-                // Prevent multiple digits in one box if typed too fast
-                e.target.value = val.charAt(0);
-                if (index < 3) pinInputs[index + 1].focus();
             }
         });
 
         input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
-                pinInputs[index - 1].focus();
+            if (e.key === 'Backspace') {
+                if (e.target.value === '' && index > 0) {
+                    pinInputs[index - 1].focus();
+                } else {
+                    e.target.value = '';
+                }
             }
         });
 
-        // Focus and select for better overlay typing
         input.addEventListener('focus', () => input.select());
     });
 
@@ -179,7 +172,7 @@ function setupEventListeners() {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const pin = pinInputs.map(input => input.value).join('');
-        if (pin.length !== 4) return; // Don't alert yet if incomplete, unless manual submit
+        if (pin.length !== 4) return;
 
         try {
             const pinMapping = await db.collection('pin_mappings').doc(pin).get();
@@ -193,10 +186,26 @@ function setupEventListeners() {
                 });
             }
         } catch (err) {
-            alert(err.message);
+            console.error(err);
+            alert("Error al acceder. Intenta de nuevo.");
         }
     });
 
+    // Theme toggle (available in login)
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    if (currentTheme === 'dark') themeIcon.setAttribute('data-feather', 'sun');
+
+    themeToggleBtn.addEventListener('click', () => {
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        localStorage.setItem('theme', currentTheme);
+        themeIcon.setAttribute('data-feather', currentTheme === 'light' ? 'moon' : 'sun');
+        feather.replace();
+    });
+}
+
+function setupAppEventListeners() {
     logoutBtn.addEventListener('click', () => auth.signOut());
 
     // Periods
@@ -217,7 +226,6 @@ function setupEventListeners() {
         activeFilters.category = document.getElementById('filterCategory').value;
         activeFilters.type = document.getElementById('filterType').value;
 
-        // Visual indicator of active filters
         if (activeFilters.search || activeFilters.category !== 'all' || activeFilters.type !== 'all') {
             filterBtn.style.color = 'var(--primary)';
         } else {
@@ -272,7 +280,7 @@ function setupEventListeners() {
         });
     }
 
-    window.addEventListener('click', (e) => {
+    const modalAppClose = (e) => {
         modals.forEach(modal => { if (e.target === modal) closeModal(modal); });
         if (!e.target.closest('.custom-select')) {
             const expenseOpts = document.getElementById('expenseCategoryOptions');
@@ -282,7 +290,8 @@ function setupEventListeners() {
             const iconPicker = document.getElementById('iconPicker');
             if (iconPicker) iconPicker.classList.add('select-hide');
         }
-    });
+    };
+    window.addEventListener('click', modalAppClose);
 }
 
 function populateFilterCategories() {
@@ -359,10 +368,8 @@ function updateUI() {
     }
     currentDateLabelEl.innerText = dateStr;
 
-    // Combine period filtering and active filters
     let filteredExpenses = filterExpensesByPeriod(expenses, currentPeriod, now);
 
-    // Apply additional filters
     if (activeFilters.search) {
         filteredExpenses = filteredExpenses.filter(exp => exp.name.toLowerCase().includes(activeFilters.search));
     }
