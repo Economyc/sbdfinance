@@ -390,7 +390,11 @@ function populateFilterCategories() {
 }
 
 function setupIconPicker() {
-    const availableIcons = ['tag', 'shopping-bag', 'shopping-cart', 'truck', 'home', 'coffee', 'film', 'credit-card', 'zap', 'briefcase', 'heart', 'gift', 'activity', 'bookmark', 'box'];
+    const availableIcons = [
+        'tag', 'dollar-sign', 'pie-chart', 'trending-up', 'credit-card', 'briefcase',
+        'shopping-bag', 'shopping-cart', 'truck', 'home', 'coffee', 'film',
+        'zap', 'heart', 'gift', 'activity', 'bookmark', 'box', 'tool', 'star'
+    ];
     const picker = document.getElementById('iconPicker');
     picker.innerHTML = availableIcons.map(icon => `<div data-icon="${icon}"><i data-feather="${icon}"></i></div>`).join('');
     const hiddenInput = document.getElementById('newCategoryIcon');
@@ -445,21 +449,45 @@ function renderCategories() {
                 <div class="category-icon-bg mini"><i data-feather="${cat.icon || 'tag'}" style="width: 14px; height: 14px;"></i></div>
                 <span>${cat.name}</span>
             </div>
-            <button class="icon-btn delete-btn" data-id="${cat.id}"><i data-feather="trash-2"></i></button>
+            <div class="category-actions">
+                <button class="icon-btn edit-cat-btn" data-id="${cat.id}"><i data-feather="edit-2"></i></button>
+                <button class="icon-btn delete-btn" data-id="${cat.id}"><i data-feather="trash-2"></i></button>
+            </div>
         </div>
     `).join('');
     feather.replace();
     categoriesListEl.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteCategory(btn.dataset.id)));
+    categoriesListEl.querySelectorAll('.edit-cat-btn').forEach(btn => btn.addEventListener('click', (e) => editCategory(btn.dataset.id)));
+}
+
+function editCategory(id) {
+    const cat = categories.find(c => c.id === id);
+    if (!cat) return;
+    document.getElementById('categoryId').value = cat.id;
+    document.getElementById('newCategoryName').value = cat.name;
+    document.getElementById('newCategoryIcon').value = cat.icon || 'tag';
+    document.getElementById('currentCategoryIcon').setAttribute('data-feather', cat.icon || 'tag');
+    feather.replace();
 }
 
 async function handleCategorySubmit(e) {
     e.preventDefault();
+    const id = document.getElementById('categoryId').value;
     const input = document.getElementById('newCategoryName');
     const icon = document.getElementById('newCategoryIcon').value;
     const name = input.value.trim();
     if (name) {
-        await db.collection('users').doc(currentUser.uid).collection('categories').add({ name, icon });
+        const userRef = db.collection('users').doc(currentUser.uid);
+        if (id) {
+            await userRef.collection('categories').doc(id).update({ name, icon });
+        } else {
+            await userRef.collection('categories').add({ name, icon });
+        }
         input.value = '';
+        document.getElementById('categoryId').value = '';
+        document.getElementById('newCategoryIcon').value = 'tag';
+        document.getElementById('currentCategoryIcon').setAttribute('data-feather', 'tag');
+        feather.replace();
     }
 }
 
