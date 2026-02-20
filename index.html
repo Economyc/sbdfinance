@@ -189,19 +189,19 @@
             <div class="modal-body">
                 <form id="categoryForm" class="category-form">
                     <input type="hidden" id="categoryId">
-                    <div style="display: flex; gap: 0.5rem; width: 100%; position: relative; align-items: stretch;">
+                    <div style="display: flex; gap: 0.5rem; width: 100%; position: relative; align-items: center;">
                         <input type="hidden" id="newCategoryIcon" value="tag">
                         <button type="button" class="icon-btn" id="categoryIconBtn"
-                            style="border: 1px solid var(--border-color); border-radius: 12px; background: var(--input-bg); aspect-ratio: 1/1; padding: 0; display: flex; align-items: center; justify-content: center;">
+                            style="border: 1px solid var(--border-color); border-radius: 12px; background: var(--input-bg); width: 48px; height: 48px; flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center;">
                             <i data-feather="tag" id="currentCategoryIcon"></i>
                         </button>
-                        <div class="icon-picker select-hide" id="iconPicker">
+                        <div class="icon-picker select-hide" id="iconPicker" style="top: 56px;">
                             <!-- Iconos inyectados en JS -->
                         </div>
                         <input type="text" id="newCategoryName" required placeholder="Nueva categoría..."
-                            style="flex: 1;">
+                            style="flex: 1; height: 48px; margin: 0; padding: 0 1rem;">
                         <button type="submit" class="icon-btn primary-icon-btn"
-                            style="border-radius: 12px; background: var(--text-main); color: var(--card-bg); aspect-ratio: 1/1; padding: 0; display: flex; align-items: center; justify-content: center;">
+                            style="border-radius: 12px; background: var(--text-main); color: var(--card-bg); width: 48px; height: 48px; flex-shrink: 0; padding: 0; display: flex; align-items: center; justify-content: center;">
                             <i data-feather="plus"></i>
                         </button>
                     </div>
