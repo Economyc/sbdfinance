@@ -143,6 +143,13 @@ function setupAuthEventListeners() {
         }
     });
 
+    authEmail.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); authPassword.focus(); }
+    });
+    authPassword.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); }
+    });
+
     registerBtn.addEventListener('click', async () => {
         const email = authEmail.value.trim();
         const password = authPassword.value;
