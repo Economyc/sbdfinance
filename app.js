@@ -198,7 +198,6 @@ function setupAppEventListeners() {
 
     // Filters
     filterBtn.addEventListener('click', () => {
-        dropdownMenu.classList.remove('active');
         openModal(filterModal);
     });
     applyFiltersBtn.addEventListener('click', () => {
@@ -286,7 +285,7 @@ function updateUI() {
     if (activeFilters.type !== 'all') filtered = filtered.filter(exp => exp.type === activeFilters.type);
 
     const total = filtered.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
-    totalAmountEl.innerText = `$${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    totalAmountEl.innerText = total.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
     renderExpenses(filtered);
 }
 
@@ -332,7 +331,7 @@ function renderExpenses(expensesToRender) {
                         </div>
                     </div>
                     <div class="category-total-wrap">
-                        <span class="category-group-total">$${catTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span class="category-group-total">${catTotal.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}</span>
                         <i data-feather="chevron-down" class="chevron-icon"></i>
                     </div>
                 </div>
@@ -351,7 +350,7 @@ function renderExpenses(expensesToRender) {
                                 </div>
                             </div>
                             <div class="expense-amount-wrap">
-                                <span class="expense-item-amount">$${parseFloat(exp.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                <span class="expense-item-amount">${parseFloat(exp.amount).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}</span>
                             </div>
                         </div>
                     `).join('')}
