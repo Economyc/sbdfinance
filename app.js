@@ -90,7 +90,8 @@ function setupAuthEventListeners() {
     googleLoginBtn.addEventListener('click', async () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            await auth.signInWithPopup(provider);
+            // Usamos Redirect en lugar de Popup para mayor compatibilidad
+            await auth.signInWithRedirect(provider);
         } catch (err) {
             console.error(err);
             alert("Error al acceder con Google. Revisa tu conexión.");
